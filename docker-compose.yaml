@@ -1,6 +1,6 @@
 services:
   app:
-    image: node
+    image: node:slim
     command: sleep infinity
     working_dir: /app
     volumes:
