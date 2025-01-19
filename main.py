@@ -3,9 +3,18 @@ import os
 import secrets
 import tempfile
 from datetime import datetime, timedelta
+from typing import List
 
 import jwt
-from fastapi import BackgroundTasks, Depends, FastAPI, HTTPException, Request, status
+from fastapi import (
+    BackgroundTasks,
+    Depends,
+    FastAPI,
+    HTTPException,
+    Query,
+    Request,
+    status,
+)
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles
@@ -135,6 +144,15 @@ async def get_audios(folder_id: str, token: str = Depends(authenticate_request))
         )
 
     return JSONResponse(content=audio_files)
+
+
+@app.get("/api/search", response_model=List[str])
+async def search(query: str = Query(..., min_length=1)):
+    search_result = drive_service.search(query)
+    filtered_result = [
+        item.rsplit(".json", 1)[0] for item in search_result if item.endswith(".json")
+    ]
+    return filtered_result
 
 
 @app.get("/audios/{file_id:path}")

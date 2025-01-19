@@ -65,6 +65,28 @@ class DriveService:
                 break
         return items
 
+    def search(self, query):
+        items = []
+        nextPageToken = None
+        fields = "nextPageToken, files(id, name)"
+        query = f"fullText contains '{query}'"
+        while True:
+            results = (
+                self.service.files()
+                .list(
+                    pageToken=nextPageToken,
+                    q=query,
+                    fields=fields,
+                    orderBy="createdTime desc",
+                )
+                .execute()
+            )
+            items.extend(results.get("files", []))
+            nextPageToken = results.get("nextPageToken")
+            if not nextPageToken:
+                break
+        return list(map(lambda x: x["name"], items))
+
     def get_file(self, file_id):
         return self.service.files().get_media(fileId=file_id).execute()
 

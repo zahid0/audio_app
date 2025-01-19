@@ -1,30 +1,83 @@
 <template>
   <div class="container">
     <div class="search">
-      <input type="text" v-model="searchQuery" placeholder="Search audios..." class="search-bar" />
+      <input
+        v-model="searchQuery"
+        type="text"
+        placeholder="Search audios..."
+        class="search-bar"
+        @input="quickFilter"
+      >
+      <button
+        v-if="searchQuery"
+        class="clear-icon"
+        @click="clearSearch"
+      >
+        &#x2715; <!-- Unicode for "×" -->
+      </button>
+      <button
+        class="search-icon"
+        :disabled="!searchQuery"
+        @click="performFullSearch"
+      >
+        &#x1F50D; <!-- Unicode for "🔍" -->
+      </button>
+      <div
+        v-if="isLoading"
+        class="loading-indicator"
+      >
+        Loading...
+      </div>
     </div>
     <div class="main-content">
       <div class="collections-menu">
         <ul>
-          <li v-for="collection in collections" :key="collection.id" @click="selectCollection(collection.id)" :class="{ 'selected': selectedCollectionId === collection.id }">{{ collection.name }}</li>
+          <li
+            v-for="collection in collections"
+            :key="collection.id"
+            :class="{ 'selected': selectedCollectionId === collection.id }"
+            @click="selectCollection(collection.id)"
+          >
+            {{ collection.name }}
+          </li>
         </ul>
       </div>
-      <div class="audio-list" :class="{ 'transcript-open': showTranscript }">
+      <div
+        class="audio-list"
+        :class="{ 'transcript-open': showTranscript }"
+      >
         <ul>
-          <li v-for="audio in filteredAudios" :key="audio.id" @click="playAudio(audio)">
+          <li
+            v-for="audio in filteredAudios"
+            :key="audio.id"
+            @click="playAudio(audio)"
+          >
             {{ audio.title }}
             <i @click.stop="fetchTranscript(audio.title)">&#x1F4DC;</i>
           </li>
         </ul>
       </div>
-      <div class="transcript-modal" v-if="showTranscript">
-        <span class="close-button" @click="this.showTranscript = false">X</span>
-        <pre class="transcript-content">{{ this.transcript }}</pre>
+      <div
+        v-if="showTranscript"
+        class="transcript-modal"
+      >
+        <span
+          class="close-button"
+          @click="showTranscript = false"
+        >X</span>
+        <pre class="transcript-content">{{ transcript }}</pre>
       </div>
     </div>
     <div class="audio-container">
-      <span>Now Playing: {{ this.currentAudio.title }}</span>
-      <audio ref="audioPlayer" :src="currentAudio.url" preload="auto" controls autoplay class="audio-player"></audio>
+      <span>Now Playing: {{ currentAudio.title }}</span>
+      <audio
+        ref="audioPlayer"
+        :src="currentAudio.url"
+        preload="auto"
+        controls
+        autoplay
+        class="audio-player"
+      />
     </div>
   </div>
 </template>
@@ -39,6 +92,7 @@ export default {
   data() {
     return {
       audios: [],
+      fullSearchResult: null,
       currentAudio: {},
       searchQuery: '',
       collections: [],
@@ -49,12 +103,41 @@ export default {
   },
   computed: {
     filteredAudios() {
-      return this.audios.filter(audio =>
-        audio.title.toLowerCase().includes(this.searchQuery.toLowerCase())
-      );
+      if (this.fullSearchResult === null) {
+        return this.audios.filter(audio =>
+          audio.title.toLowerCase().includes(this.searchQuery.toLowerCase())
+        );
+      } else {
+        return this.audios.filter(audio =>
+          this.fullSearchResult.some(result => result === audio.title)
+        );
+      }
     }
   },
+  mounted() {
+    this.fetchControlCollections();
+  },
   methods: {
+    clearSearch() {
+      this.searchQuery = '';
+      this.fullSearchResult = null;
+    },
+    async performFullSearch() {
+      if (!this.searchQuery) return;
+
+      this.isLoading = true;
+      try {
+        const response = await axios.get('/api/search', {
+          params: { query: this.searchQuery }
+        });
+        this.fullSearchResult = response.data;
+      } catch (error) {
+        console.error('Error performing full search:', error);
+        // Handle error (e.g., show error message to user)
+      } finally {
+        this.isLoading = false;
+      }
+    },
     async fetchControlCollections() {
       const response = await axios.get('/api/collections');
       this.collections = response.data;
@@ -90,9 +173,6 @@ export default {
       }
     },
   },
-  mounted() {
-    this.fetchControlCollections();
-  },
 };
 </script>
 
@@ -102,11 +182,6 @@ export default {
   height: 100vh;
   display: flex;
   flex-direction: column;
-}
-
-.search {
-  flex: 0 0 40px;
-  border: 2px solid black;
 }
 
 .main-content {
@@ -143,11 +218,50 @@ export default {
   border: 1px solid black;
 }
 
+.search {
+  flex: 0 0 40px;
+  border: 2px solid black;
+  position: relative;
+  padding: 10px;
+  display: flex;
+  align-items: center;
+}
+
 .search-bar {
+  flex-grow: 1;
   padding: 10px;
   border: 1px solid #ccc;
   border-radius: 4px;
-  width: 98%;
+  margin-right: 10px;
+}
+
+.clear-icon,
+.search-icon {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  padding: 5px;
+}
+
+.clear-icon {
+  color: #999;
+}
+
+.search-icon {
+  color: #2196F3;
+}
+
+.search-icon:disabled {
+  color: #ccc;
+  cursor: not-allowed;
+}
+
+.loading-indicator {
+  position: absolute;
+  right: 15px;
+  top: 50%;
+  transform: translateY(-50%);
 }
 
 li {

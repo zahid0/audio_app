@@ -1,13 +1,27 @@
 <template>
   <div class="login-page">
     <div class="login-container">
-      <div v-if="error" class="error-message">
-          {{ error }}
+      <div
+        v-if="error"
+        class="error-message"
+      >
+        {{ error }}
       </div>
       <form @submit.prevent="handleSubmit">
-        <input type="text" v-model="username" placeholder="Username" />
-        <input type="password" v-model="password" placeholder="Password" />
-        <input type="submit" value="Login">
+        <input
+          v-model="username"
+          type="text"
+          placeholder="Username"
+        >
+        <input
+          v-model="password"
+          type="password"
+          placeholder="Password"
+        >
+        <input
+          type="submit"
+          value="Login"
+        >
       </form>
     </div>
   </div>

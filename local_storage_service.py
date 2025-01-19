@@ -1,4 +1,5 @@
 import os
+import re
 
 
 class LocalStorageService:
@@ -22,6 +23,18 @@ class LocalStorageService:
                 )
                 files.append({"id": relative_path, "name": filename})
         return files
+
+    def search(self, query):
+        pattern = re.compile(query, re.IGNORECASE)
+        matches = []
+        for root, dirs, files in os.walk(self.root_dir):
+            for file in files:
+                file_path = os.path.join(root, file)
+                with open(file_path, "r", errors="ignore") as f:
+                    for line_num, line in enumerate(f, 1):
+                        if pattern.search(line):
+                            matches.append(file)
+        return matches
 
     def get_file(self, file_id):
         full_path = os.path.join(self.root_dir, file_id)
