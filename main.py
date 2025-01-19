@@ -147,7 +147,7 @@ async def get_audios(folder_id: str, token: str = Depends(authenticate_request))
 
 
 @app.get("/api/search", response_model=List[str])
-async def search(query: str = Query(..., min_length=1)):
+async def search(query: str = Query(..., min_length=1), token: str = Depends(authenticate_request)):
     search_result = drive_service.search(query)
     filtered_result = [
         item.rsplit(".json", 1)[0] for item in search_result if item.endswith(".json")
