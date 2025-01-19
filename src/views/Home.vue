@@ -3,25 +3,27 @@
     <div class="search">
       <input type="text" v-model="searchQuery" placeholder="Search audios..." class="search-bar" />
     </div>
-    <div class="collections-menu">
-      <ul>
-        <li v-for="collection in collections" :key="collection.id" @click="selectCollection(collection.id)" :class="{ 'selected': selectedCollectionId === collection.id }">{{ collection.name }}</li>
-      </ul>
-    </div>
-    <div class="audio-list">
-      <ul>
-        <li v-for="audio in filteredAudios" :key="audio.id" @click="playAudio(audio)">
-          {{ audio.title }}
-          <i @click.stop="fetchTranscript(audio.title)">&#x1F4DC;</i>
-        </li>
-      </ul>
-    </div>
-    <div class="transcript-modal" v-if="showTranscript">
-      <span class="close-button" @click="this.showTranscript = false">X</span>
-      <pre class="transcript-content">{{ this.transcript }}</pre>
+    <div class="main-content">
+      <div class="collections-menu">
+        <ul>
+          <li v-for="collection in collections" :key="collection.id" @click="selectCollection(collection.id)" :class="{ 'selected': selectedCollectionId === collection.id }">{{ collection.name }}</li>
+        </ul>
+      </div>
+      <div class="audio-list" :class="{ 'transcript-open': showTranscript }">
+        <ul>
+          <li v-for="audio in filteredAudios" :key="audio.id" @click="playAudio(audio)">
+            {{ audio.title }}
+            <i @click.stop="fetchTranscript(audio.title)">&#x1F4DC;</i>
+          </li>
+        </ul>
+      </div>
+      <div class="transcript-modal" v-if="showTranscript">
+        <span class="close-button" @click="this.showTranscript = false">X</span>
+        <pre class="transcript-content">{{ this.transcript }}</pre>
+      </div>
     </div>
     <div class="audio-container">
-      <span> Now Playing: {{ this.currentAudio.title }}</span>
+      <span>Now Playing: {{ this.currentAudio.title }}</span>
       <audio ref="audioPlayer" :src="currentAudio.url" preload="auto" controls autoplay class="audio-player"></audio>
     </div>
   </div>
@@ -76,10 +78,16 @@ export default {
       });
     },
     async fetchTranscript(id) {
-      const response = await axios.get(`/api/transcripts/${id}`);
-      const response_json = response.data;
-      this.transcript = response_json['text'];
-      this.showTranscript = true;
+      try {
+        const response = await axios.get(`/api/transcripts/${id}`);
+        const response_json = response.data;
+        this.transcript = response_json['text'];
+        this.showTranscript = true;
+      } catch (error) {
+        const response_code = error.response ? error.response.status : 'unknown';
+        this.transcript = `Unable to fetch transcript, response code = ${response_code}`;
+        this.showTranscript = true;
+      }
     },
   },
   mounted() {
@@ -91,41 +99,52 @@ export default {
 <style>
 
 .container {
-  height: 100%;
-  display: grid;
-  grid-gap: 1px;
-  grid-template-columns: minmax(150px, 1fr) repeat(auto-fit, minmax(200px, 5fr));
-  grid-template-rows: 40px repeat(auto-fit, minmax(200px, 1fr)) 60px;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 .search {
-  grid-column: 1 / -1;
+  flex: 0 0 40px;
   border: 2px solid black;
 }
 
+.main-content {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+}
+
 .collections-menu {
+  flex: 0 0 max(150px, 15%);
   border: 2px solid black;
   overflow-y: auto;
 }
 
 .audio-list {
+  flex: 1;
   overflow-y: auto;
+  transition: flex 0.3s ease;
+}
+
+.audio-list.transcript-open {
+  flex: 0 0 35%;
 }
 
 .transcript-modal {
+  flex: 0 0 50%;
   overflow-y: auto;
   position: relative;
+  border-left: 2px solid black;
 }
 
 .audio-container {
-  grid-column: 1 / -1;
-  grid-row: -1;
+  flex: 0 0 60px;
   border: 1px solid black;
 }
 
 .search-bar {
   padding: 10px;
-  margin-bottom: 10px;
   border: 1px solid #ccc;
   border-radius: 4px;
   width: 98%;
@@ -146,20 +165,19 @@ ul .selected {
 
 .transcript-content {
   white-space: pre-wrap;
-  overflow-y: auto;
   overflow-wrap: break-word;
 }
 
 .close-button {
-  position: fixed;
-  top: 70px;
-  right: 20px;
+  position: absolute;
+  top: 10px;
+  right: 10px;
   cursor: pointer;
   font-size: 16px;
   background: none;
   border: none;
   color: #000;
-  z-index: 10px;
+  z-index: 10;
 }
 
 .close-button:hover {
@@ -173,12 +191,39 @@ ul .selected {
 
 .audio-player {
   width: 100%;
-  background-color: #e9ecef; /* and a pleasing background color for player */
+  background-color: #e9ecef;
 }
 
 .audio-container span {
   color: #343a40;
   margin: 0;
+}
+
+@media (max-width: 768px) {
+  .main-content {
+    flex-direction: column;
+  }
+
+  .collections-menu {
+    flex: 0 0 auto;
+    max-height: 30vh;
+  }
+
+  .audio-list {
+    flex: 1;
+  }
+
+  .transcript-modal {
+    position: fixed;
+    top: 40px;
+    left: 0;
+    right: 0;
+    bottom: 60px;
+    z-index: 1000;
+    background: white;
+    border: none;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  }
 }
 
 </style>
