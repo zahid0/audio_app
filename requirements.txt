@@ -4,3 +4,5 @@ passlib
 python-multipart
 PyJWT
 bcrypt
+itsdangerous
+python-dotenv
