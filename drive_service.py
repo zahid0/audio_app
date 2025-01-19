@@ -77,7 +77,6 @@ class DriveService:
                     pageToken=nextPageToken,
                     q=query,
                     fields=fields,
-                    orderBy="createdTime desc",
                 )
                 .execute()
             )
